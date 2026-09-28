@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# List non-default local branches, then linked worktrees, across projects.
+LC_ALL=C
+export LC_ALL
+case $0 in
+    */*) script=$0 ;;
+    *) script=$(command -v -- "$0") || exit 1 ;;
+esac
+script_dir=$(CDPATH= cd -- "$(dirname -- "$script")" && pwd) || exit 1
+
+status=0
+printf 'NON-MAIN BRANCHES\n'
+"$script_dir/b-branches" || status=$?
+printf '\nNON-MAIN WORKTREES\n'
+"$script_dir/b-worktrees" || status=$?
+exit "$status"
