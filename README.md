@@ -34,15 +34,21 @@ Add `TERMINOLOGY.md` if you have terms that refer to some aspect of your project
 
 See bin folder for relevant helper scripts that will be very useful for day-to-day use.
 
-## Cleanup
-
-TODO
-
 ## Default Conventions
 
 - Any requested code change will open a PR immediately, and any related changes will commit and push to the PR immediately.
 - When a PR is merged or closed, it will delete all associated worktrees & branches immediately. If your main worktree is on the same branch, it will also switch back to the default branch and fast forward it to latest.
 - When you ask to checkout a branch or PR, it means checkout to the main worktree.  This operation will also fast-forward or rebase on latest in the default branch.
+
+## Cleanup
+
+It's expected that there will be some leftover local branches & worktrees after your work.  You can either leave these alone, or cleanup after yourself.  However, it's better to cleanup after yourself so your agent doesn't spend time enumerating them.
+
+```sh
+TODO: how to cleanup
+```
+
+The reason why we made cleanup a manual process was that in order to implement a proper cleanup process, we didn't want to be too aggressive (e.g. cleanup after every operation). Nor do we want to wait 30mins before deleting them (which incurs a cost for the agent in checking at every turn).  Hence, we leave that up to you.
 
 ## Why the name beaver?
 
