@@ -42,10 +42,10 @@ See bin folder for relevant helper scripts that will be very useful for day-to-d
 
 ## Cleanup
 
-It's expected that there will be some leftover local branches & worktrees after your work.  You can either leave these alone, or cleanup after yourself.  However, it's better to cleanup after yourself so your agent doesn't spend time enumerating them.
+It's expected that there will be some leftover local branches & worktrees after your work.  You can either leave these alone, or cleanup after yourself.  However, it's better to cleanup after yourself so your agent doesn't spend time enumerating them while investigating your repos.
 
 ```sh
-TODO: how to cleanup
+b-cleanup # will show you all local non-main branches & worktrees and ask you for confirmation before cleaning up
 ```
 
 The reason why we made cleanup a manual process was that in order to implement a proper cleanup process, we didn't want to be too aggressive (e.g. cleanup after every operation). Nor do we want to wait 30mins before deleting them (which incurs a cost for the agent in checking at every turn).  Hence, we leave that up to you.

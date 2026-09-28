@@ -1,0 +1,167 @@
+#!/bin/sh
+
+# Show leftover non-default branches and linked worktrees, then delete them
+# after the user types y.
+LC_ALL=C
+export LC_ALL
+case $0 in
+    */*) script=$0 ;;
+    *) script=$(command -v -- "$0") || exit 1 ;;
+esac
+script_dir=$(CDPATH= cd -- "$(dirname -- "$script")" && pwd) || exit 1
+projects_link=$script_dir/../projects
+
+if [ ! -d "$projects_link" ]; then
+    printf 'Projects directory not found: %s\n' "$projects_link" >&2
+    exit 1
+fi
+
+"$script_dir/b-branches-and-worktrees" || exit $?
+
+set_default() {
+    default=
+    if ref=$(git -C "$project" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null); then
+        case $ref in
+            origin/*) default=${ref#origin/} ;;
+            *) default=$ref ;;
+        esac
+    elif git -C "$project" show-ref --verify --quiet refs/heads/main; then
+        default=main
+    elif git -C "$project" show-ref --verify --quiet refs/heads/master; then
+        default=master
+    fi
+}
+
+pending=0
+for project in "$projects_link"/* "$projects_link"/.[!.]* "$projects_link"/..?*; do
+    [ -d "$project" ] || continue
+    name=${project##*/}
+    case $name in
+        *.worktrees) continue ;;
+    esac
+    [ -e "$project/.git" ] || continue
+    git -C "$project" rev-parse --git-dir >/dev/null 2>&1 || continue
+    set_default
+    while IFS= read -r branch; do
+        [ -n "$branch" ] || continue
+        [ "$branch" = "$default" ] && continue
+        pending=1
+        break
+    done <<EOF
+$(git -C "$project" for-each-ref --format='%(refname:short)' refs/heads)
+EOF
+    [ "$pending" -eq 1 ] && break
+    n=$(git -C "$project" worktree list --porcelain 2>/dev/null |
+        awk 'BEGIN { c = 0 } /^worktree / { c++ } END { print c }')
+    [ "$n" -gt 1 ] && pending=1 && break
+done
+
+if [ "$pending" -eq 0 ]; then
+    printf 'Nothing to clean up.\n'
+    exit 0
+fi
+
+if [ ! -t 0 ]; then
+    printf 'Refusing to clean up without a terminal. Type y to confirm.\n' >&2
+    exit 1
+fi
+
+printf '\nType Y and press Enter to delete all of the above: ' >&2
+IFS= read -r answer || exit 1
+answer=$(printf '%s' "$answer" | tr -d '\r')
+case $answer in
+    [yY]) ;;
+    *)
+        printf 'Aborted.\n'
+        exit 1
+        ;;
+esac
+
+porcelain=$(mktemp) || exit 1
+trap 'rm -f "$porcelain"' EXIT
+
+removed_wt=0
+removed_br=0
+failed=0
+
+maybe_remove() {
+    [ -n "$wt" ] || return 0
+    if [ "$is_main" = 1 ]; then
+        is_main=0
+        wt=
+        return 0
+    fi
+    if git -C "$project" worktree remove -- "$wt"; then
+        printf 'removed worktree %s\n' "$wt"
+        removed_wt=$((removed_wt + 1))
+    else
+        printf 'failed to remove worktree %s\n' "$wt" >&2
+        failed=$((failed + 1))
+    fi
+    wt=
+}
+
+for project in "$projects_link"/* "$projects_link"/.[!.]* "$projects_link"/..?*; do
+    [ -d "$project" ] || continue
+    name=${project##*/}
+    case $name in
+        *.worktrees) continue ;;
+    esac
+    [ -e "$project/.git" ] || continue
+    git -C "$project" rev-parse --git-dir >/dev/null 2>&1 || continue
+
+    if git -C "$project" worktree list --porcelain >"$porcelain" 2>/dev/null; then
+        wt=
+        is_main=1
+        while IFS= read -r line || [ -n "$line" ]; do
+            case $line in
+                '')
+                    maybe_remove
+                    ;;
+                'worktree '*)
+                    maybe_remove
+                    wt=${line#'worktree '}
+                    ;;
+            esac
+        done <"$porcelain"
+        maybe_remove
+    fi
+
+    set_default
+    current=$(git -C "$project" symbolic-ref --quiet --short HEAD 2>/dev/null || true)
+    while IFS= read -r branch; do
+        [ -n "$branch" ] || continue
+        [ "$branch" = "$default" ] && continue
+        if [ -n "$current" ] && [ "$branch" = "$current" ]; then
+            if [ -z "$default" ]; then
+                printf '%s: skip %s (checked out; no default branch)\n' \
+                    "$name" "$branch" >&2
+                failed=$((failed + 1))
+                continue
+            fi
+            if ! git -C "$project" checkout --quiet "$default"; then
+                printf '%s: could not check out %s; skip deleting %s\n' \
+                    "$name" "$default" "$branch" >&2
+                failed=$((failed + 1))
+                continue
+            fi
+            printf '%s: checked out %s\n' "$name" "$default"
+            current=$default
+        fi
+        if git -C "$project" branch -D -- "$branch" >/dev/null; then
+            printf 'deleted branch %s %s\n' "$name" "$branch"
+            removed_br=$((removed_br + 1))
+        else
+            printf 'failed to delete branch %s %s\n' "$name" "$branch" >&2
+            failed=$((failed + 1))
+        fi
+    done <<EOF
+$(git -C "$project" for-each-ref --format='%(refname:short)' refs/heads)
+EOF
+done
+
+printf 'removed %s worktree(s), deleted %s branch(es)\n' "$removed_wt" "$removed_br"
+
+if [ "$failed" -ne 0 ]; then
+    exit 1
+fi
