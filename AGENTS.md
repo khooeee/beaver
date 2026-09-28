@@ -78,12 +78,6 @@ Then delete the merged or closed pull request's remote and local branch, and rem
 
 Give a concise result: what was accomplished, which projects were affected, the pull requests if any, anything unresolved, and any decision needed.
 
-## Cleanup
-
-Do not remove a worktree that has an open pull request, unless the user asks to drop the work.
-
-After research finishes with no open pull request, leave that worktree in place. Write a one-line settle note beside it, outside the project repo, at `./worktrees/<project>/<branch>.settled`, containing the time the research finished. The next time you run, check each settle note on its own. If the current user-message timestamp is 30 minutes or more after that worktree's time, remove it with `git worktree remove` and without `--force`, then remove its settle note. A worktree with no settle note, or a newer one, may belong to a session that is still working. Leave it. Do not wait, sleep, or start a timer.
-
 ## Code guidelines
 
 Apply these constraints whenever you add or edit code.
