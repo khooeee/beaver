@@ -11,4 +11,4 @@ None
 ## Contraints
 
 - Prefer one useful reply over status chatter (quietness).
-- Unlike firstmate, Beaver does the work itself until LLMs become much cheaper & can communicate faster.  Beaver shouldn't spawn separate agents to do work.
+- Unlike firstmate, Beaver does the work itself.  That is, until LLMs can communicate with each other much faster which isn't the case now.  Beaver shouldn't spawn agents separately to do work like firstmate does.
