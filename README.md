@@ -20,14 +20,14 @@ Add Beaver's helpers to PATH for your shell:
 ```sh
 # Bash
 echo 'export PATH=~/beaver/bin:$PATH' >> ~/.bashrc
-echo 'alias ch="cd ~/beaver"' >> ~/.bashrc
-echo 'alias chp="cd ~/beaver/projects"' >> ~/.bashrc
+echo 'alias cb="cd ~/beaver"' >> ~/.bashrc
+echo 'alias cbp="cd ~/beaver/projects"' >> ~/.bashrc
 
 
 # Zsh
 echo 'export PATH=~/beaver/bin:$PATH' >> ~/.zshrc
-echo 'alias ch="cd ~/beaver"' >> ~/.zshrc
-echo 'alias chp="cd ~/beaver/projects"' >> ~/.zshrc
+echo 'alias cb="cd ~/beaver"' >> ~/.zshrc
+echo 'alias cbp="cd ~/beaver/projects"' >> ~/.zshrc
 ```
 
 Add `TERMINOLOGY.md` if you have terms that refer to some aspect of your project (i.e. basically a shortcut for a project subdirectory).
