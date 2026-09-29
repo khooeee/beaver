@@ -39,6 +39,7 @@ See bin folder for relevant helper scripts that will be very useful for day-to-d
 - Any requested code change will open a PR immediately, and any related changes will commit and push to the PR immediately.
 - When a PR is merged or closed, it will delete all associated worktrees & branches immediately. If your main worktree is on the same branch, it will also switch back to the default branch and fast forward it to latest.
 - When you ask to checkout a branch or PR, it means checkout to the main worktree.  This operation will also fast-forward or rebase on latest in the default branch.
+- When you ask to work in the main worktree, it will fetch and fast-forward or rebase that worktree onto the latest origin default branch before making changes.
 
 ## Cleanup
 
