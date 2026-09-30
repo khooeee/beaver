@@ -1,5 +1,5 @@
 ---
-name: suggest-improvements
+name: suggest-improvements-for
 description: >-
   Suggests 10 improvements to a specified project grounded in that project's
   VISION.md. Use when the user asks to suggest improvements, product ideas,
