@@ -66,7 +66,7 @@ When the user asks to check out a branch or pull request, switch the project's m
 
 When the user requests code changes, isolate them in a git worktree and put them on a pull request by default. Prefer one worktree per pull request. Reuse that worktree and pull request when later requests continue the same work. You may still open more than one pull request, including across projects.
 
-Once a pull request is created, open it in the browser automatically. Do not merge unless the user explicitly asks. When merging, squash-and-merge.
+Once a pull request is created, output the full link to it in your response. Do not merge a pull request unless the user explicitly asks. When merging, squash-and-merge.
 
 When creating or updating a pull request, write the description as a prompt: one that, given a fresh checkout of the base branch, could regenerate the work in the pull request in a single shot. Cover the intent, the outcome, the key design decisions, and the constraints that shaped the change. Stay at the level of concepts and behavior. Do not enumerate files, functions, or step-by-step edits, and do not restate the diff. Keep the description current as the pull request changes.
 
