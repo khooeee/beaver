@@ -22,7 +22,7 @@ cd ~/beaver
 ln -s ../code projects
 ```
 
-If you `mkdir ~/beaver/projects` and place all your code there, you might experience your problem where you want to work on a project without using beaver and start a coding session from that directory with Claude Code.  Claude Code and Pi has slightly different behavior from Codex or Cursor CLI where it will walk upwards from your working directory to load AGENTS.md and start automatically creating worktrees, etc.
+If you `mkdir ~/beaver/projects` and place all your code there, you might experience a problem where you might want to work on a project without using beaver. You start a coding session from that specific project directory with Claude Code, expecting beaver AGENTS.md to not be active.  Claude Code and Pi has slightly different behavior from Codex or Cursor CLI where it will walk upwards from your working directory to load AGENTS.md and start automatically creating worktrees, etc.
 
 Add Beaver's helpers to PATH for your shell:
 
