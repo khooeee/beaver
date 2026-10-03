@@ -15,14 +15,14 @@ cd
 git clone git@github.com:khooeee/beaver.git
 ```
 
-Let's say you have your code in `~/code`.  Create your projects symlink as:
+Let's say you have your code in `~/code`.  Create the projects symlink with:
 
 ```sh
 cd ~/beaver
 ln -s ../code projects
 ```
 
-Use the symlink. A real `~/beaver/projects` directory puts your repos under Beaver. Claude Code and Pi walk upward and load `AGENTS.md`, so a session you start inside a project still follows Beaver and creates worktrees and pull requests. Codex and Cursor CLI don't walk upward.
+The symlink is better than a real `~/beaver/projects` directory. Claude Code and Pi will walk upwards and load `AGENTS.md`, so a session you start inside a specific project directory (e.g. `~/code/someProject`) still follows Beaver and creates worktrees and pull requests. Codex and Cursor CLI don't walk upwards.
 
 Add Beaver's helpers to PATH for your shell:
 
