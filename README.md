@@ -15,6 +15,15 @@ cd
 git clone git@github.com:khooeee/beaver.git
 ```
 
+Let's say you have your code in `~/code`.  Create your projects symlink as:
+
+```sh
+cd ~/beaver
+ln -s ../code projects
+```
+
+If you `mkdir ~/beaver/projects` and place all your code there, you might experience your problem where you want to work on a project without using beaver and start a coding session from that directory with Claude Code.  Claude Code and Pi has slightly different behavior from Codex or Cursor CLI where it will walk upwards from your working directory to load AGENTS.md and start automatically creating worktrees, etc.
+
 Add Beaver's helpers to PATH for your shell:
 
 ```sh
