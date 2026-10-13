@@ -1,12 +1,10 @@
 # Beaver
 
-Originally inspired by https://github.com/kunchenguid/firstmate/
+This is a single player coding agent project manager focused on speed & token efficiency.  I typically pair this setup with [switcheroo](https://github.com/khooeee/switcheroo/).  [Firstmate](https://github.com/kunchenguid/firstmate/) inspired the creation of this project.
 
-Firstmate is amazing, but honestly it does way more than what I need it for.  So this is a smaller & opinionated single player version for speed & token efficiency.  You can spawn multiple beavers to work concurrently, and I typically pair this setup with [switcheroo](https://github.com/khooeee/switcheroo/).
+To get started, start your coding agent in the beaver folder with all your Github repos under the projects directory, and begin working across multiple projects from the same session easily.
 
-Start your coding agent in the beaver folder with all your Github repos under the projects directory, and begin working across multiple projects from the same session easily.
-
-You can also have concurrent sessions in the same beaver folder as well doing different things because all changes happen in linked worktrees by default.
+You can run multiple sessions in the same beaver folder doing different things at the same time because all code changes happen in linked worktrees by default.
 
 ## Setup
 
