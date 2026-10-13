@@ -2,7 +2,7 @@
 
 # List each project's local branches other than its default branch,
 # its remote-tracking branches other than that default, then its linked
-# worktrees. Pass "local" or "remote" to print only that part.
+# worktrees.
 LC_ALL=C
 export LC_ALL
 case $0 in
@@ -16,16 +16,6 @@ if [ ! -d "$projects_link" ]; then
     printf 'Projects directory not found: %s\n' "$projects_link" >&2
     exit 1
 fi
-
-section=all
-case ${1-} in
-    '') ;;
-    local|remote) section=$1 ;;
-    *)
-        printf 'Usage: b-branches-and-worktrees [local|remote]\n' >&2
-        exit 1
-        ;;
-esac
 
 set_default() {
     default=
@@ -59,56 +49,47 @@ project_branch_table() {
     '
 }
 
-if [ "$section" = all ] || [ "$section" = local ]; then
-    printf 'NON-MAIN BRANCHES\n'
-    for project in "$projects_link"/* "$projects_link"/.[!.]* "$projects_link"/..?*; do
-        [ -d "$project" ] || continue
-        name=${project##*/}
-        # These directories hold linked worktrees; they are not projects.
-        case $name in
-            *.worktrees) continue ;;
-        esac
-        # Require the child's own Git metadata; never discover the enclosing repo.
-        [ -e "$project/.git" ] || continue
-        git -C "$project" rev-parse --git-dir >/dev/null 2>&1 || continue
-        set_default
-        git -C "$project" for-each-ref --format='%(refname:short)' refs/heads |
-            while IFS= read -r branch; do
-                [ -n "$branch" ] || continue
-                [ "$branch" = "$default" ] && continue
-                printf '%s\t%s\n' "$name" "$branch"
-            done
-    done | project_branch_table
-fi
+printf 'NON-MAIN BRANCHES\n'
+for project in "$projects_link"/* "$projects_link"/.[!.]* "$projects_link"/..?*; do
+    [ -d "$project" ] || continue
+    name=${project##*/}
+    # These directories hold linked worktrees; they are not projects.
+    case $name in
+        *.worktrees) continue ;;
+    esac
+    # Require the child's own Git metadata; never discover the enclosing repo.
+    [ -e "$project/.git" ] || continue
+    git -C "$project" rev-parse --git-dir >/dev/null 2>&1 || continue
+    set_default
+    git -C "$project" for-each-ref --format='%(refname:short)' refs/heads |
+        while IFS= read -r branch; do
+            [ -n "$branch" ] || continue
+            [ "$branch" = "$default" ] && continue
+            printf '%s\t%s\n' "$name" "$branch"
+        done
+done | project_branch_table
 
-if [ "$section" = all ] || [ "$section" = remote ]; then
-    [ "$section" = all ] && printf '\n'
-    printf 'REMOTE-TRACKING BRANCHES\n'
-    for project in "$projects_link"/* "$projects_link"/.[!.]* "$projects_link"/..?*; do
-        [ -d "$project" ] || continue
-        name=${project##*/}
-        case $name in
-            *.worktrees) continue ;;
-        esac
-        [ -e "$project/.git" ] || continue
-        git -C "$project" rev-parse --git-dir >/dev/null 2>&1 || continue
-        set_default
-        # strip=2 keeps origin/HEAD; refname:short collapses that ref to origin.
-        git -C "$project" for-each-ref --format='%(refname:strip=2)' refs/remotes |
-            while IFS= read -r branch; do
-                [ -n "$branch" ] || continue
-                case $branch in
-                    */HEAD) continue ;;
-                esac
-                [ -n "$default" ] && [ "${branch#*/}" = "$default" ] && continue
-                printf '%s\t%s\n' "$name" "$branch"
-            done
-    done | project_branch_table
-fi
-
-if [ "$section" = remote ]; then
-    exit 0
-fi
+printf '\nREMOTE-TRACKING BRANCHES\n'
+for project in "$projects_link"/* "$projects_link"/.[!.]* "$projects_link"/..?*; do
+    [ -d "$project" ] || continue
+    name=${project##*/}
+    case $name in
+        *.worktrees) continue ;;
+    esac
+    [ -e "$project/.git" ] || continue
+    git -C "$project" rev-parse --git-dir >/dev/null 2>&1 || continue
+    set_default
+    # strip=2 keeps origin/HEAD; refname:short collapses that ref to origin.
+    git -C "$project" for-each-ref --format='%(refname:strip=2)' refs/remotes |
+        while IFS= read -r branch; do
+            [ -n "$branch" ] || continue
+            case $branch in
+                */HEAD) continue ;;
+            esac
+            [ -n "$default" ] && [ "${branch#*/}" = "$default" ] && continue
+            printf '%s\t%s\n' "$name" "$branch"
+        done
+done | project_branch_table
 
 projects_dir=$(CDPATH= cd -P -- "$projects_link" && pwd -P) || exit 1
 linked=$(mktemp) || exit 1
