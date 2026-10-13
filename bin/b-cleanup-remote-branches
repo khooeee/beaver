@@ -88,6 +88,7 @@ case $answer in
 esac
 
 removed=0
+pruned=0
 failed=0
 
 for project in "$projects_link"/* "$projects_link"/.[!.]* "$projects_link"/..?*; do
@@ -108,10 +109,19 @@ for project in "$projects_link"/* "$projects_link"/.[!.]* "$projects_link"/..?*;
             failed=$((failed + 1))
             continue
         fi
-        if git -C "$project" push "$remote" --delete -- "$short" >/dev/null; then
+        if err=$(git -C "$project" push "$remote" --delete -- "$short" 2>&1 >/dev/null); then
             printf 'deleted remote branch %s %s\n' "$name" "$branch"
             removed=$((removed + 1))
+        elif printf '%s\n' "$err" | grep -q 'remote ref does not exist'; then
+            if git -C "$project" update-ref -d "refs/remotes/$branch"; then
+                printf 'pruned stale remote branch %s %s\n' "$name" "$branch"
+                pruned=$((pruned + 1))
+            else
+                printf 'failed to prune stale remote branch %s %s\n' "$name" "$branch" >&2
+                failed=$((failed + 1))
+            fi
         else
+            printf '%s\n' "$err" >&2
             printf 'failed to delete remote branch %s %s\n' "$name" "$branch" >&2
             failed=$((failed + 1))
         fi
@@ -120,7 +130,8 @@ $(remote_branches)
 EOF
 done
 
-printf 'deleted %s remote branch(es)\n' "$removed"
+printf 'deleted %s remote branch(es), pruned %s stale remote-tracking branch(es)\n' \
+    "$removed" "$pruned"
 
 if [ "$failed" -ne 0 ]; then
     exit 1
