@@ -22,7 +22,7 @@ cd ~/beaver
 ln -s ../code projects
 ```
 
-The symlink is better than a real `~/beaver/projects` directory. Claude Code and Pi will walk upwards and load `AGENTS.md`, so a session you start inside a specific project directory (e.g. `~/code/someProject`) still follows Beaver and creates worktrees and pull requests. Codex and Cursor CLI don't walk upwards.
+Rationale: Claude Code and Pi will walk upwards and load `AGENTS.md`.  If you created the symlink `~/code` to point to `~/beaver/projects` instead, you would likely find your Claude Code or Pi session in `~/code/projectName` odd, as it starts to create worktrees for your changes as if it was following beaver's rules.
 
 Add Beaver's helpers to PATH for your shell:
 
@@ -39,7 +39,7 @@ echo 'alias cb="cd ~/beaver"' >> ~/.zshrc
 echo 'alias cbp="cd ~/beaver/projects"' >> ~/.zshrc
 ```
 
-Add `TERMINOLOGY.md` if you have terms that refer to some aspect of your project (i.e. basically a shortcut for a project subdirectory).
+Add `TERMINOLOGY.md` if you have terms that refer to some aspect of your project (i.e. it's useful as a shortcut for a project subdirectory).
 
 ## Scripts
 
@@ -63,10 +63,9 @@ Shows that same list, then waits for you to type `y` before deleting all of it. 
 
 ## Default Conventions
 
-- Any requested code change will open a PR immediately, and any related changes will commit and push to the PR immediately.
-- When a PR is merged or closed, it will delete all associated worktrees & branches immediately. If your main worktree is on the same branch, it will also switch back to the default branch and fast forward it to latest.
-- When you ask to checkout a branch or PR, it means checkout to the main worktree.  This operation will also fast-forward or rebase on latest in the default branch.
-- When you ask to work in the main worktree, it will fetch and fast-forward or rebase that worktree onto the latest origin default branch before making changes.
+- Any requested code change will create a worktree, push the relevant changes & open a PR immediately.  Any further changes will commit and push to the PR.
+- When the PR is merged or closed, it will delete all associated worktrees & branches.  If your main worktree is on the same branch, it will also switch back to the default branch and fast forward it to latest.
+- When you ask to checkout a branch or PR, it means to checkout that branch on the main worktree.  This operation will also fast-forward or rebase on the default branch's latest SHA.
 
 ## Cleanup
 
@@ -76,10 +75,10 @@ It's expected that there will be some leftover local branches, remote-tracking b
 b-cleanup-branches-and-worktrees
 ```
 
-The reason why we made cleanup a manual process was that in order to implement a proper cleanup process, we didn't want to be too aggressive (e.g. cleanup after every operation). Nor do we want to wait 30mins before deleting them (which incurs a cost for the agent in checking at every turn).  Hence, we leave that up to you.
+The reason why we made cleanup a manual process was because a smart cleanup process would require alot of checks often.  This would slow down your coding agent too much, a big no no in our book for now.  Hence, we leave that up to you.
 
 ## Why the name beaver?
 
-I love beavers.  They are one of the most famous builders in the animal kingdom.  They build dams, lodges, canals and food caches.  Like me, they just love to build!
+I love beavers.  They are one of the most famous builders in the animal kingdom.  They build dams, lodges, canals and food caches.  Like me, they love to build!
 
 Licensed under the [MIT License](LICENSE).
