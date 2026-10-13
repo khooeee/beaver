@@ -1,0 +1,127 @@
+#!/bin/sh
+
+# Show each project's non-default remote-tracking branches, then delete them
+# on their remotes after the user types y.
+LC_ALL=C
+export LC_ALL
+case $0 in
+    */*) script=$0 ;;
+    *) script=$(command -v -- "$0") || exit 1 ;;
+esac
+script_dir=$(CDPATH= cd -- "$(dirname -- "$script")" && pwd) || exit 1
+projects_link=$script_dir/../projects
+
+if [ ! -d "$projects_link" ]; then
+    printf 'Projects directory not found: %s\n' "$projects_link" >&2
+    exit 1
+fi
+
+"$script_dir/b-remote-branches" || exit $?
+
+set_default() {
+    default=
+    if ref=$(git -C "$project" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null); then
+        case $ref in
+            origin/*) default=${ref#origin/} ;;
+            *) default=$ref ;;
+        esac
+    elif git -C "$project" show-ref --verify --quiet refs/heads/main; then
+        default=main
+    elif git -C "$project" show-ref --verify --quiet refs/heads/master; then
+        default=master
+    fi
+}
+
+# Print each non-default remote-tracking branch, one per line.
+remote_branches() {
+    # strip=2 keeps origin/HEAD; refname:short collapses that ref to origin.
+    git -C "$project" for-each-ref --format='%(refname:strip=2)' refs/remotes |
+        while IFS= read -r branch; do
+            [ -n "$branch" ] || continue
+            case $branch in
+                */HEAD) continue ;;
+            esac
+            [ -n "$default" ] && [ "${branch#*/}" = "$default" ] && continue
+            printf '%s\n' "$branch"
+        done
+}
+
+pending=0
+for project in "$projects_link"/* "$projects_link"/.[!.]* "$projects_link"/..?*; do
+    [ -d "$project" ] || continue
+    name=${project##*/}
+    case $name in
+        *.worktrees) continue ;;
+    esac
+    [ -e "$project/.git" ] || continue
+    git -C "$project" rev-parse --git-dir >/dev/null 2>&1 || continue
+    set_default
+    while IFS= read -r branch; do
+        [ -n "$branch" ] || continue
+        pending=1
+        break
+    done <<EOF
+$(remote_branches)
+EOF
+    [ "$pending" -eq 1 ] && break
+done
+
+if [ "$pending" -eq 0 ]; then
+    printf 'Nothing to clean up.\n'
+    exit 0
+fi
+
+if [ ! -t 0 ]; then
+    printf 'Refusing to clean up without a terminal. Type y to confirm.\n' >&2
+    exit 1
+fi
+
+printf '\nType Y and press Enter to delete all of the above from their remotes: ' >&2
+IFS= read -r answer || exit 1
+answer=$(printf '%s' "$answer" | tr -d '\r')
+case $answer in
+    [yY]) ;;
+    *)
+        printf 'Aborted.\n'
+        exit 1
+        ;;
+esac
+
+removed=0
+failed=0
+
+for project in "$projects_link"/* "$projects_link"/.[!.]* "$projects_link"/..?*; do
+    [ -d "$project" ] || continue
+    name=${project##*/}
+    case $name in
+        *.worktrees) continue ;;
+    esac
+    [ -e "$project/.git" ] || continue
+    git -C "$project" rev-parse --git-dir >/dev/null 2>&1 || continue
+    set_default
+    while IFS= read -r branch; do
+        [ -n "$branch" ] || continue
+        remote=${branch%%/*}
+        short=${branch#*/}
+        if [ "$remote" = "$branch" ] || [ -z "$short" ]; then
+            printf 'failed to parse remote branch %s %s\n' "$name" "$branch" >&2
+            failed=$((failed + 1))
+            continue
+        fi
+        if git -C "$project" push "$remote" --delete -- "$short" >/dev/null; then
+            printf 'deleted remote branch %s %s\n' "$name" "$branch"
+            removed=$((removed + 1))
+        else
+            printf 'failed to delete remote branch %s %s\n' "$name" "$branch" >&2
+            failed=$((failed + 1))
+        fi
+    done <<EOF
+$(remote_branches)
+EOF
+done
+
+printf 'deleted %s remote branch(es)\n' "$removed"
+
+if [ "$failed" -ne 0 ]; then
+    exit 1
+fi
