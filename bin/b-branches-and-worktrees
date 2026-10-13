@@ -1,7 +1,8 @@
 #!/bin/sh
 
 # List each project's local branches other than its default branch,
-# then each project's linked worktrees.
+# its remote-tracking branches other than that default, then its linked
+# worktrees. Pass "local" or "remote" to print only that part.
 LC_ALL=C
 export LC_ALL
 case $0 in
@@ -16,18 +17,17 @@ if [ ! -d "$projects_link" ]; then
     exit 1
 fi
 
-printf 'NON-MAIN BRANCHES\n'
-for project in "$projects_link"/* "$projects_link"/.[!.]* "$projects_link"/..?*; do
-    [ -d "$project" ] || continue
-    name=${project##*/}
-    # These directories hold linked worktrees; they are not projects.
-    case $name in
-        *.worktrees) continue ;;
-    esac
-    # Require the child's own Git metadata; never discover the enclosing repo.
-    [ -e "$project/.git" ] || continue
-    git -C "$project" rev-parse --git-dir >/dev/null 2>&1 || continue
+section=all
+case ${1-} in
+    '') ;;
+    local|remote) section=$1 ;;
+    *)
+        printf 'Usage: b-branches-and-worktrees [local|remote]\n' >&2
+        exit 1
+        ;;
+esac
 
+set_default() {
     default=
     if ref=$(git -C "$project" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null); then
         case $ref in
@@ -39,28 +39,76 @@ for project in "$projects_link"/* "$projects_link"/.[!.]* "$projects_link"/..?*;
     elif git -C "$project" show-ref --verify --quiet refs/heads/master; then
         default=master
     fi
+}
 
-    git -C "$project" for-each-ref --format='%(refname:short)' refs/heads |
-        while IFS= read -r branch; do
-            [ -n "$branch" ] || continue
-            [ "$branch" = "$default" ] && continue
-            printf '%s\t%s\n' "$name" "$branch"
-        done
-done | sort -t "$(printf '\t')" -k1,1 -k2,2 | awk -F '\t' '
-    BEGIN {
-        project_width = length("PROJECT")
-    }
-    {
-        names[NR] = $1
-        branches[NR] = $2
-        if (length($1) > project_width) project_width = length($1)
-    }
-    END {
-        printf "%-*s  %s\n", project_width, "PROJECT", "BRANCH"
-        for (i = 1; i <= NR; i++)
-            printf "%-*s  %s\n", project_width, names[i], branches[i]
-    }
-'
+project_branch_table() {
+    sort -t "$(printf '\t')" -k1,1 -k2,2 | awk -F '\t' '
+        BEGIN {
+            project_width = length("PROJECT")
+        }
+        {
+            names[NR] = $1
+            branches[NR] = $2
+            if (length($1) > project_width) project_width = length($1)
+        }
+        END {
+            printf "%-*s  %s\n", project_width, "PROJECT", "BRANCH"
+            for (i = 1; i <= NR; i++)
+                printf "%-*s  %s\n", project_width, names[i], branches[i]
+        }
+    '
+}
+
+if [ "$section" = all ] || [ "$section" = local ]; then
+    printf 'NON-MAIN BRANCHES\n'
+    for project in "$projects_link"/* "$projects_link"/.[!.]* "$projects_link"/..?*; do
+        [ -d "$project" ] || continue
+        name=${project##*/}
+        # These directories hold linked worktrees; they are not projects.
+        case $name in
+            *.worktrees) continue ;;
+        esac
+        # Require the child's own Git metadata; never discover the enclosing repo.
+        [ -e "$project/.git" ] || continue
+        git -C "$project" rev-parse --git-dir >/dev/null 2>&1 || continue
+        set_default
+        git -C "$project" for-each-ref --format='%(refname:short)' refs/heads |
+            while IFS= read -r branch; do
+                [ -n "$branch" ] || continue
+                [ "$branch" = "$default" ] && continue
+                printf '%s\t%s\n' "$name" "$branch"
+            done
+    done | project_branch_table
+fi
+
+if [ "$section" = all ] || [ "$section" = remote ]; then
+    [ "$section" = all ] && printf '\n'
+    printf 'REMOTE-TRACKING BRANCHES\n'
+    for project in "$projects_link"/* "$projects_link"/.[!.]* "$projects_link"/..?*; do
+        [ -d "$project" ] || continue
+        name=${project##*/}
+        case $name in
+            *.worktrees) continue ;;
+        esac
+        [ -e "$project/.git" ] || continue
+        git -C "$project" rev-parse --git-dir >/dev/null 2>&1 || continue
+        set_default
+        # strip=2 keeps origin/HEAD; refname:short collapses that ref to origin.
+        git -C "$project" for-each-ref --format='%(refname:strip=2)' refs/remotes |
+            while IFS= read -r branch; do
+                [ -n "$branch" ] || continue
+                case $branch in
+                    */HEAD) continue ;;
+                esac
+                [ -n "$default" ] && [ "${branch#*/}" = "$default" ] && continue
+                printf '%s\t%s\n' "$name" "$branch"
+            done
+    done | project_branch_table
+fi
+
+if [ "$section" = remote ]; then
+    exit 0
+fi
 
 projects_dir=$(CDPATH= cd -P -- "$projects_link" && pwd -P) || exit 1
 linked=$(mktemp) || exit 1

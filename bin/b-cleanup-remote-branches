@@ -16,7 +16,7 @@ if [ ! -d "$projects_link" ]; then
     exit 1
 fi
 
-"$script_dir/b-remote-branches" || exit $?
+"$script_dir/b-branches-and-worktrees" remote || exit $?
 
 set_default() {
     default=
