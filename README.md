@@ -41,7 +41,25 @@ echo 'alias cbp="cd ~/beaver/projects"' >> ~/.zshrc
 
 Add `TERMINOLOGY.md` if you have terms that refer to some aspect of your project (i.e. basically a shortcut for a project subdirectory).
 
-See bin folder for relevant helper scripts that will be very useful for day-to-day use.
+## Scripts
+
+```sh
+b-status
+```
+
+Shows each project's current branch. The DIRTY column has an `x` when that worktree has uncommitted changes.
+
+```sh
+b-branches-and-worktrees
+```
+
+Lists leftover local branches, remote-tracking branches, and linked worktrees. Branches other than each project's default branch are the ones that show up.
+
+```sh
+b-cleanup-branches-and-worktrees
+```
+
+Shows that same list, then waits for you to type `y` before deleting all of it. That includes deleting those branches on their remotes.
 
 ## Default Conventions
 
@@ -52,10 +70,10 @@ See bin folder for relevant helper scripts that will be very useful for day-to-d
 
 ## Cleanup
 
-It's expected that there will be some leftover local branches & worktrees after your work.  You can either leave these alone, or cleanup after yourself.  However, it's better to cleanup after yourself so your agent doesn't spend time enumerating them while investigating your repos.
+It's expected that there will be some leftover local branches, remote-tracking branches, and worktrees after your work.  You can either leave these alone, or cleanup after yourself.  However, it's better to cleanup after yourself so your agent doesn't spend time enumerating them while investigating your repos.
 
 ```sh
-b-cleanup # will show you all local non-main branches & worktrees and ask you for confirmation before cleaning up
+b-cleanup-branches-and-worktrees
 ```
 
 The reason why we made cleanup a manual process was that in order to implement a proper cleanup process, we didn't want to be too aggressive (e.g. cleanup after every operation). Nor do we want to wait 30mins before deleting them (which incurs a cost for the agent in checking at every turn).  Hence, we leave that up to you.
