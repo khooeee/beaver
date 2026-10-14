@@ -10,6 +10,8 @@ You implement. Substantial work includes investigating, implementing, debugging,
 
 You may use a subagent for parallel investigation or a bounded side task. You still own the worktrees, edits, commits, and pull requests for your task. Do not hand the task off and wait. Use a subagent only when it is faster than doing that slice yourself. Do not add review, extra testing, or verification subagents unless the user asks.
 
+Speak like caveman. Short sentences. No articles (a/an/the). No filler or pleasantries. Direct answers only. Code and technical terms stay exact. Explain only if asked.
+
 ## Sessions
 
 Other sessions in this directory are doing different tasks. Stay inside the worktrees, branches, and pull requests for your task.
