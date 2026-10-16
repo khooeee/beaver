@@ -1,0 +1,93 @@
+#!/bin/sh
+
+# Check out each project's default branch and fast-forward it from origin.
+# A project with uncommitted changes is left as it is.
+LC_ALL=C
+export LC_ALL
+case $0 in
+    */*) script=$0 ;;
+    *) script=$(command -v -- "$0") || exit 1 ;;
+esac
+script_dir=$(CDPATH= cd -- "$(dirname -- "$script")" && pwd) || exit 1
+projects_link=$script_dir/../projects
+
+if [ ! -d "$projects_link" ]; then
+    printf 'Projects directory not found: %s\n' "$projects_link" >&2
+    exit 1
+fi
+
+set_default() {
+    default=
+    if ref=$(git -C "$project" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null); then
+        case $ref in
+            origin/*) default=${ref#origin/} ;;
+            *) default=$ref ;;
+        esac
+    elif git -C "$project" show-ref --verify --quiet refs/heads/main; then
+        default=main
+    elif git -C "$project" show-ref --verify --quiet refs/heads/master; then
+        default=master
+    fi
+}
+
+failed=0
+for project in "$projects_link"/* "$projects_link"/.[!.]* "$projects_link"/..?*; do
+    [ -d "$project" ] || continue
+    name=${project##*/}
+    case $name in
+        *.worktrees) continue ;;
+    esac
+    [ -e "$project/.git" ] || continue
+    git -C "$project" rev-parse --git-dir >/dev/null 2>&1 || continue
+
+    if [ -n "$(git -C "$project" status --porcelain 2>/dev/null)" ]; then
+        printf '%s: skipped, uncommitted changes\n' "$name" >&2
+        failed=1
+        continue
+    fi
+
+    git -C "$project" remote set-head origin -a >/dev/null 2>&1 || true
+    set_default
+    if [ -z "$default" ]; then
+        printf '%s: skipped, no default branch\n' "$name" >&2
+        failed=1
+        continue
+    fi
+
+    if git -C "$project" show-ref --verify --quiet "refs/heads/$default"; then
+        if ! err=$(git -C "$project" checkout --quiet "$default" 2>&1); then
+            printf '%s: checkout %s failed\n%s\n' "$name" "$default" "$err" >&2
+            failed=1
+            continue
+        fi
+    elif git -C "$project" show-ref --verify --quiet "refs/remotes/origin/$default"; then
+        if ! err=$(git -C "$project" checkout --quiet -b "$default" --track "origin/$default" 2>&1); then
+            printf '%s: checkout %s failed\n%s\n' "$name" "$default" "$err" >&2
+            failed=1
+            continue
+        fi
+    else
+        printf '%s: skipped, origin/%s not found\n' "$name" "$default" >&2
+        failed=1
+        continue
+    fi
+
+    before=$(git -C "$project" rev-parse HEAD) || {
+        printf '%s: HEAD unavailable\n' "$name" >&2
+        failed=1
+        continue
+    }
+    if ! err=$(git -C "$project" pull --ff-only --quiet origin "$default" 2>&1); then
+        printf '%s: pull %s failed\n%s\n' "$name" "$default" "$err" >&2
+        failed=1
+        continue
+    fi
+    after=$(git -C "$project" rev-parse HEAD) || after=$before
+    if [ "$before" = "$after" ]; then
+        printf '%s: %s (up to date)\n' "$name" "$default"
+    else
+        printf '%s: %s (updated)\n' "$name" "$default"
+    fi
+done
+
+exit "$failed"
