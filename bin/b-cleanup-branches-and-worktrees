@@ -88,7 +88,7 @@ if [ ! -t 0 ]; then
     exit 1
 fi
 
-printf '\nType Y and press Enter to delete all of the above, including branches on their remotes: ' >&2
+printf '\nType Y and press Enter to delete the local branches, remote-tracking branches, and worktrees above: ' >&2
 IFS= read -r answer || exit 1
 answer=$(printf '%s' "$answer" | tr -d '\r')
 case $answer in
@@ -105,7 +105,6 @@ trap 'rm -f "$porcelain"' EXIT
 removed_wt=0
 removed_br=0
 removed_remote=0
-pruned=0
 failed=0
 
 set_common() {
@@ -273,27 +272,11 @@ EOF
 
     while IFS= read -r branch; do
         [ -n "$branch" ] || continue
-        remote=${branch%%/*}
-        short=${branch#*/}
-        if [ "$remote" = "$branch" ] || [ -z "$short" ]; then
-            printf 'failed to parse remote branch %s %s\n' "$name" "$branch" >&2
-            failed=$((failed + 1))
-            continue
-        fi
-        if err=$(git -C "$project" push "$remote" --delete -- "$short" 2>&1 >/dev/null); then
-            printf 'deleted remote branch %s %s\n' "$name" "$branch"
+        if git -C "$project" branch -dr -- "$branch" >/dev/null; then
+            printf 'deleted remote-tracking branch %s %s\n' "$name" "$branch"
             removed_remote=$((removed_remote + 1))
-        elif printf '%s\n' "$err" | grep -q 'remote ref does not exist'; then
-            if git -C "$project" update-ref -d "refs/remotes/$branch"; then
-                printf 'pruned stale remote branch %s %s\n' "$name" "$branch"
-                pruned=$((pruned + 1))
-            else
-                printf 'failed to prune stale remote branch %s %s\n' "$name" "$branch" >&2
-                failed=$((failed + 1))
-            fi
         else
-            printf '%s\n' "$err" >&2
-            printf 'failed to delete remote branch %s %s\n' "$name" "$branch" >&2
+            printf 'failed to delete remote-tracking branch %s %s\n' "$name" "$branch" >&2
             failed=$((failed + 1))
         fi
     done <<EOF
@@ -301,8 +284,8 @@ $(remote_branches)
 EOF
 done
 
-printf 'removed %s worktree(s), deleted %s branch(es), deleted %s remote branch(es), pruned %s stale remote-tracking branch(es)\n' \
-    "$removed_wt" "$removed_br" "$removed_remote" "$pruned"
+printf 'removed %s worktree(s), deleted %s branch(es), deleted %s remote-tracking branch(es)\n' \
+    "$removed_wt" "$removed_br" "$removed_remote"
 
 if [ "$failed" -ne 0 ]; then
     exit 1

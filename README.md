@@ -1,6 +1,6 @@
 # Beaver
 
-This is a single player coding agent project manager focused on speed & token efficiency.  I typically pair this setup with [switcheroo](https://github.com/khooeee/switcheroo/).  [Firstmate](https://github.com/kunchenguid/firstmate/) inspired the creation of this project.
+This is a single player coding agent project manager focused on speed & token efficiency.  I typically pair this setup with switcheroo.  Firstmate inspired the creation of this project.
 
 To get started, start your coding agent in the beaver folder with all your Github repos under the projects directory, and begin working across multiple projects from the same session easily.
 
@@ -57,7 +57,7 @@ Lists leftover local branches, remote-tracking branches, and linked worktrees. B
 b-cleanup-branches-and-worktrees
 ```
 
-Shows that same list, then waits for you to type `y` before deleting all of it. That includes deleting those branches on their remotes.
+Shows that same list, then waits for you to type `y` before deleting those local branches, remote-tracking branches, and linked worktrees. Branches on the remotes stay.
 
 ## Default Conventions
 
@@ -79,4 +79,4 @@ The reason why we made cleanup a manual process was because a smart cleanup proc
 
 I love beavers.  They are one of the most famous builders in the animal kingdom.  They build dams, lodges, canals and food caches.  Like me, they love to build!
 
-Licensed under the [MIT License](LICENSE).
+Licensed under the MIT License.
