@@ -48,6 +48,12 @@ b-status
 Shows each project's current branch. The DIRTY column has an `x` when that worktree has uncommitted changes.
 
 ```sh
+b-checkout-main
+```
+
+Checks out each project's default branch and fast-forwards it from origin. A project with uncommitted changes stays on its current branch.
+
+```sh
 b-branches-and-worktrees
 ```
 
