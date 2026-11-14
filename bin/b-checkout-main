@@ -2,43 +2,19 @@
 
 # Check out each project's default branch and fast-forward it from origin.
 # A project with uncommitted changes is left as it is.
-LC_ALL=C
-export LC_ALL
 case $0 in
     */*) script=$0 ;;
     *) script=$(command -v -- "$0") || exit 1 ;;
 esac
 script_dir=$(CDPATH= cd -- "$(dirname -- "$script")" && pwd) || exit 1
-projects_link=$script_dir/../projects
-
-if [ ! -d "$projects_link" ]; then
-    printf 'Projects directory not found: %s\n' "$projects_link" >&2
-    exit 1
-fi
-
-set_default() {
-    default=
-    if ref=$(git -C "$project" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null); then
-        case $ref in
-            origin/*) default=${ref#origin/} ;;
-            *) default=$ref ;;
-        esac
-    elif git -C "$project" show-ref --verify --quiet refs/heads/main; then
-        default=main
-    elif git -C "$project" show-ref --verify --quiet refs/heads/master; then
-        default=master
-    fi
-}
+lib=$script_dir/../lib
+. "$lib/projects.sh"
+. "$lib/is-project.sh"
+. "$lib/set-default.sh"
 
 failed=0
 for project in "$projects_link"/* "$projects_link"/.[!.]* "$projects_link"/..?*; do
-    [ -d "$project" ] || continue
-    name=${project##*/}
-    case $name in
-        *.worktrees) continue ;;
-    esac
-    [ -e "$project/.git" ] || continue
-    git -C "$project" rev-parse --git-dir >/dev/null 2>&1 || continue
+    is_project "$project" || continue
 
     if [ -n "$(git -C "$project" status --porcelain 2>/dev/null)" ]; then
         printf '%s: skipped, uncommitted changes\n' "$name" >&2
