@@ -1,24 +1,19 @@
 #!/bin/sh
 
-# Projects live beside this script, at ../projects.
-LC_ALL=C
-export LC_ALL
+# Show each project's current branch and whether it has uncommitted changes.
 case $0 in
     */*) script=$0 ;;
     *) script=$(command -v -- "$0") || exit 1 ;;
 esac
 script_dir=$(CDPATH= cd -- "$(dirname -- "$script")" && pwd) || exit 1
-projects_dir=$script_dir/../projects
+lib=$script_dir/../lib
+. "$lib/projects.sh"
+. "$lib/print-table.sh"
 
-if [ ! -d "$projects_dir" ]; then
-    printf 'Projects directory not found: %s\n' "$projects_dir" >&2
-    exit 1
-fi
-
-for project in "$projects_dir"/* "$projects_dir"/.[!.]* "$projects_dir"/..?*; do
+for project in "$projects_link"/* "$projects_link"/.[!.]* "$projects_link"/..?*; do
     [ -d "$project" ] || continue
     branch='(not a Git repository)'
-    status=dirty
+    dirty=x
     # Require the child's own Git metadata; never discover the enclosing repo.
     if [ -e "$project/.git" ] &&
         git -C "$project" rev-parse --git-dir >/dev/null 2>&1; then
@@ -29,32 +24,10 @@ for project in "$projects_dir"/* "$projects_dir"/.[!.]* "$projects_dir"/..?*; do
         else
             branch='(HEAD unavailable)'
         fi
-        if porcelain=$(git -C "$project" status --porcelain 2>/dev/null); then
-            if [ -z "$porcelain" ]; then
-                status=clean
-            fi
+        if porcelain=$(git -C "$project" status --porcelain 2>/dev/null) &&
+            [ -z "$porcelain" ]; then
+            dirty=
         fi
     fi
-    case $status in
-        clean) status= ;;
-        *) status=x ;;
-    esac
-    printf '%s\t%s\t%s\n' "${project##*/}" "$branch" "$status"
-done | sort -t "$(printf '\t')" -k1,1 | awk -F '\t' '
-    BEGIN {
-        project_width = length("PROJECT")
-        branch_width = length("BRANCH")
-    }
-    {
-        names[NR] = $1
-        branches[NR] = $2
-        statuses[NR] = $3
-        if (length($1) > project_width) project_width = length($1)
-        if (length($2) > branch_width) branch_width = length($2)
-    }
-    END {
-        printf "%-*s  %-*s  %s\n", project_width, "PROJECT", branch_width, "BRANCH", "DIRTY"
-        for (i = 1; i <= NR; i++)
-            printf "%-*s  %-*s  %s\n", project_width, names[i], branch_width, branches[i], statuses[i]
-    }
-'
+    printf '%s\t%s\t%s\n' "${project##*/}" "$branch" "$dirty"
+done | sort -t "$(printf '\t')" -k1,1 | print_table PROJECT BRANCH DIRTY
